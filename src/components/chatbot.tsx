@@ -7,39 +7,31 @@ import { cn } from "@/lib/utils";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const SYSTEM_PROMPT =
-  "You are EduVision AI, an education companion aligned with SDG 4 (Quality Education) and Vision 2030/2035. " +
-  "Help students with career guidance, personalized study roadmaps, and scholarship recommendations. " +
-  "Be concise, encouraging, and structured. Use **bold** for key terms when useful.";
+function mockReply(input: string): string {
+  const q = input.toLowerCase();
+  if (/(scholarship|grant|funding|bursary)/.test(q)) {
+    return "Here are **3 strong scholarship matches** based on your profile:\n• **Vision 2030 STEM Grant** — $8,000 · 96% match\n• **UNESCO SDG-4 Fellowship** — $12,000 · 91% match\n• **Future Leaders Award** — $5,500 · 87% match\n\nWant me to draft your application essay outline?";
+  }
+  if (/(career|job|profession|work)/.test(q)) {
+    return "Top career paths I'd recommend right now:\n1. **AI Engineer** — 94% match, +34% industry growth\n2. **Data Scientist** — 89% match, +28% growth\n3. **UX Researcher** — 81% match, +21% growth\n\nTell me which one excites you and I'll build a 12-week roadmap.";
+  }
+  if (/(roadmap|study plan|learn|study|course)/.test(q)) {
+    return "Here's a **personalized 4-step study roadmap**:\n• Weeks 1–2: Foundations of Python\n• Weeks 3–4: Data Structures & Algorithms\n• Weeks 5–7: Intro to Machine Learning\n• Weeks 8–10: Build an AI portfolio project\n\nWant me to add weekly checkpoints and resources?";
+  }
+  if (/(sdg|vision 20)/.test(q)) {
+    return "EduVision AI is aligned with **SDG 4 (Quality Education)** and national **Vision 2030/2035** agendas — bringing personalized mentorship to every learner and preparing them for a knowledge-based, AI-augmented economy.";
+  }
+  if (/(hi|hello|hey|salam|marhaba)/.test(q)) {
+    return "Hi there! 👋 I can help with **career guidance**, **study roadmaps**, or **scholarship matches**. What would you like to explore?";
+  }
+  if (/(thank)/.test(q)) {
+    return "You're welcome! Keep learning — your future is being built one decision at a time. ✨";
+  }
+  return "Great question! Based on your profile, I'd suggest exploring **AI & data fields** — they offer the strongest growth and scholarship coverage. Try asking me about *careers*, *roadmaps*, or *scholarships*.";
+}
 
-async function callGemini(history: Msg[]): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-  if (!apiKey) {
-    return "Missing VITE_GEMINI_API_KEY. Add it to your .env file and restart the dev server.";
-  }
-  const contents = history.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
-      }),
-    },
-  );
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Gemini error ${res.status}: ${t}`);
-  }
-  const data = await res.json();
-  const text =
-    data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
-  return text || "Sorry, I couldn't generate a response.";
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export function Chatbot() {
@@ -61,17 +53,9 @@ export function Chatbot() {
     setMessages(next);
     setInput("");
     setTyping(true);
-    try {
-      const answer = await callGemini(next);
-      setMessages((m) => [...m, { role: "assistant", content: answer }]);
-    } catch (e) {
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: `⚠️ ${e instanceof Error ? e.message : "Something went wrong."}` },
-      ]);
-    } finally {
-      setTyping(false);
-    }
+    await sleep(700 + Math.random() * 600);
+    setMessages((m) => [...m, { role: "assistant", content: mockReply(text) }]);
+    setTyping(false);
   };
 
   return (
@@ -82,7 +66,7 @@ export function Chatbot() {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           EduVision AI Assistant
-          <span className="ml-auto text-xs font-normal text-muted-foreground">Gemini-powered</span>
+          <span className="ml-auto text-xs font-normal text-muted-foreground">Demo mode</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
