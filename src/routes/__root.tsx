@@ -76,10 +76,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "EduVision AI — AI-powered Career & Study Guidance" },
       { name: "description", content: "EduVision AI delivers personalized study roadmaps, career guidance and scholarship matches aligned with SDG 4 and Vision 2030/2035." },
       { name: "author", content: "EduVision AI" },
-      { property: "og:title", content: "EduVision AI" },
-      { property: "og:description", content: "AI agent for quality education — SDG 4 · Vision 2030 · Vision 2035." },
+      { property: "og:title", content: "EduVision AI — AI-powered Career & Study Guidance" },
+      { property: "og:description", content: "EduVision AI delivers personalized study roadmaps, career guidance and scholarship matches aligned with SDG 4 and Vision 2030/2035." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "EduVision AI — AI-powered Career & Study Guidance" },
+      { name: "twitter:description", content: "EduVision AI delivers personalized study roadmaps, career guidance and scholarship matches aligned with SDG 4 and Vision 2030/2035." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/616d1c80-2db3-4b06-b6e7-149dc7652b70/id-preview-fc17e59e--adf8592b-16ef-413f-8c88-166b74cf93e9.lovable.app-1779979184703.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/616d1c80-2db3-4b06-b6e7-149dc7652b70/id-preview-fc17e59e--adf8592b-16ef-413f-8c88-166b74cf93e9.lovable.app-1779979184703.png" },
     ],
     links: [
       {
