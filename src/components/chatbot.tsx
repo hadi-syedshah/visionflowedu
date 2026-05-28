@@ -85,7 +85,11 @@ export function Chatbot() {
                     ? "bg-gradient-primary text-primary-foreground rounded-br-sm"
                     : "bg-muted text-foreground rounded-bl-sm",
                 )}
-                dangerouslySetInnerHTML={{ __html: m.content.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>") }}
+                dangerouslySetInnerHTML={{
+                  __html: m.content
+                    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                    .replace(/\n/g, "<br/>"),
+                }}
               />
               {m.role === "user" && (
                 <div className="h-8 w-8 shrink-0 rounded-full bg-secondary grid place-items-center">
