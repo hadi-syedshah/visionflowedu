@@ -34,6 +34,7 @@ import {
   Radar,
 } from "recharts";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/student")({
   head: () => ({
@@ -64,13 +65,65 @@ const skillsData = [
   { skill: "Communication", value: 72 },
 ];
 
-const roadmap = [
+type RoadmapStep = { title: string; status: "done" | "active" | "todo"; weeks: string };
+
+const defaultRoadmap: RoadmapStep[] = [
   { title: "Foundations of Python", status: "done", weeks: "Wk 1-2" },
   { title: "Data Structures & Algorithms", status: "done", weeks: "Wk 3-4" },
   { title: "Intro to Machine Learning", status: "active", weeks: "Wk 5-7" },
   { title: "Build an AI Portfolio Project", status: "todo", weeks: "Wk 8-10" },
   { title: "Internship & Certification", status: "todo", weeks: "Wk 11-12" },
 ];
+
+function generateRoadmap(interests: string, skills: string): { target: string; steps: RoadmapStep[] } {
+  const blob = `${interests} ${skills}`.toLowerCase();
+  const pick = (kw: RegExp, target: string, steps: string[]): { target: string; steps: string[] } | null =>
+    kw.test(blob) ? { target, steps } : null;
+  const found =
+    pick(/(ai|machine|ml|data)/, "AI Engineer", [
+      "Foundations of Python",
+      "Data Structures & Algorithms",
+      "Intro to Machine Learning",
+      "Build an AI Portfolio Project",
+      "Internship & Certification",
+    ]) ||
+    pick(/(design|ux|ui|figma)/, "UX / Product Designer", [
+      "Design Principles & Color Theory",
+      "Wireframing in Figma",
+      "User Research & Testing",
+      "Build a Portfolio Case Study",
+      "Design Internship",
+    ]) ||
+    pick(/(climate|sustain|environment|green)/, "Climate Tech Specialist", [
+      "Climate Science Foundations",
+      "Sustainable Systems",
+      "Renewable Energy Tech",
+      "Capstone: Carbon Tracker App",
+      "Green Internship Placement",
+    ]) ||
+    pick(/(business|finance|marketing|entrepreneur)/, "Business Strategist", [
+      "Business Fundamentals",
+      "Financial Literacy",
+      "Marketing & Brand Strategy",
+      "Launch a Mini-Startup",
+      "Industry Mentorship",
+    ]) ||
+    pick(/(health|bio|medic|nurse)/, "Health Sciences Track", [
+      "Human Biology Foundations",
+      "Public Health & SDGs",
+      "Research Methods",
+      "Clinical Shadowing Project",
+      "Health Internship",
+    ]) ||
+    { target: "AI Engineer", steps: defaultRoadmap.map((s) => s.title) };
+
+  const steps: RoadmapStep[] = found.steps.map((title, i) => ({
+    title,
+    weeks: `Wk ${i * 2 + 1}-${i * 2 + 2}`,
+    status: i < 2 ? "done" : i === 2 ? "active" : "todo",
+  }));
+  return { target: found.target, steps };
+}
 
 const scholarships = [
   { name: "Vision 2030 STEM Grant", org: "Ministry of Education", amount: "$8,000", match: 96, deadline: "Aug 15" },
@@ -94,6 +147,15 @@ const resources = [
 function StudentDashboard() {
   const [interests, setInterests] = useState("AI, design, climate");
   const [skills, setSkills] = useState("Python, writing, public speaking");
+  const [roadmap, setRoadmap] = useState<RoadmapStep[]>(defaultRoadmap);
+  const [target, setTarget] = useState("AI Engineer");
+
+  const regenerate = () => {
+    const { target: t, steps } = generateRoadmap(interests, skills);
+    setTarget(t);
+    setRoadmap(steps);
+    toast.success("Roadmap regenerated", { description: `Tailored for ${t}` });
+  };
 
   return (
     <DashboardShell title="Welcome back, Amira 👋" subtitle="Here's your personalized learning journey">
@@ -123,7 +185,7 @@ function StudentDashboard() {
                 <Input className="mt-1" value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="e.g. Python, design" />
               </div>
               <div className="sm:col-span-2 flex justify-end">
-                <Button className="bg-gradient-primary hover:opacity-90 shadow-glow"><Sparkles className="h-4 w-4 mr-1" /> Regenerate roadmap</Button>
+                <Button onClick={regenerate} className="bg-gradient-primary hover:opacity-90 shadow-glow"><Sparkles className="h-4 w-4 mr-1" /> Regenerate roadmap</Button>
               </div>
             </CardContent>
           </Card>
@@ -131,7 +193,7 @@ function StudentDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Your AI Study Roadmap</CardTitle>
-              <CardDescription>12-week path tailored to: AI Engineer</CardDescription>
+              <CardDescription>12-week path tailored to: {target}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -247,7 +309,13 @@ function StudentDashboard() {
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <div className="text-lg font-bold text-gradient">{s.amount}</div>
-                  <Button size="sm" variant="ghost">Apply <ExternalLink className="h-3 w-3 ml-1" /></Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toast.success(`Application started: ${s.name}`, { description: "We'll email you next steps." })}
+                    >
+                      Apply <ExternalLink className="h-3 w-3 ml-1" />
+                    </Button>
                 </div>
               </div>
             ))}
