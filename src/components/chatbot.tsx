@@ -9,6 +9,18 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 function mockReply(input: string): string {
   const q = input.toLowerCase();
+  if (/(vision 2030|2035|sdg ?4|sustainab)/.test(q)) {
+    return "EduVision AI directly supports **SDG 4 (Quality Education)** and the **Vision 2030/2035** knowledge-economy agenda by:\n• Personalizing learning for every student\n• Closing the skills gap with AI-mapped career paths\n• Surfacing scholarships and opportunities that would otherwise stay hidden";
+  }
+  if (/(python|coding|programming|developer)/.test(q)) {
+    return "Great pick! A solid **Python developer roadmap**:\n1. Syntax, control flow, functions (Wk 1-2)\n2. OOP, files, error handling (Wk 3-4)\n3. NumPy / Pandas for data (Wk 5-6)\n4. Build 2 portfolio projects (Wk 7-10)\n\nWant me to suggest your first project idea?";
+  }
+  if (/(design|ux|ui|figma|portfolio)/.test(q)) {
+    return "For a **UX / Product Design** track I'd recommend:\n• Master Figma & design tokens\n• Study 10 award-winning case studies\n• Build 3 end-to-end case studies\n• Apply to design internships\n\nShall I generate a 12-week design roadmap for you?";
+  }
+  if (/(interview|cv|resume|application)/.test(q)) {
+    return "Here's a quick **application toolkit**:\n• Tailor your CV per role (ATS-friendly)\n• Prepare 3 STAR-format stories\n• Practice 5 behavioral + 5 technical questions\n• Send a thank-you note within 24h\n\nWant me to mock-interview you?";
+  }
   if (/(scholarship|grant|funding|bursary)/.test(q)) {
     return "Here are **3 strong scholarship matches** based on your profile:\n• **Vision 2030 STEM Grant** — $8,000 · 96% match\n• **UNESCO SDG-4 Fellowship** — $12,000 · 91% match\n• **Future Leaders Award** — $5,500 · 87% match\n\nWant me to draft your application essay outline?";
   }
