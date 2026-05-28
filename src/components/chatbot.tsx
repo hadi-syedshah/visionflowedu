@@ -7,19 +7,39 @@ import { cn } from "@/lib/utils";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CANNED: Record<string, string> = {
-  career: "Based on your interests, I'd recommend exploring **Data Science**, **AI Engineering**, or **UX Research**. Want me to build a 12-week roadmap for any of these?",
-  scholarship: "I found 3 strong scholarships you may qualify for: **Vision 2030 STEM Grant**, **UNESCO SDG-4 Fellowship**, and **Future Leaders Award**. Shall I open the applications?",
-  roadmap: "Here's a sample 4-step roadmap: 1) Foundations (Python + Math), 2) Core ML, 3) Projects portfolio, 4) Internship & certification. I can expand any step.",
-  default: "I'm EduVision AI — ask me about careers, study plans, scholarships, or how AI can accelerate your learning journey.",
-};
+const SYSTEM_PROMPT =
+  "You are EduVision AI, an education companion aligned with SDG 4 (Quality Education) and Vision 2030/2035. " +
+  "Help students with career guidance, personalized study roadmaps, and scholarship recommendations. " +
+  "Be concise, encouraging, and structured. Use **bold** for key terms when useful.";
 
-function reply(input: string): string {
-  const q = input.toLowerCase();
-  if (q.includes("career") || q.includes("job")) return CANNED.career;
-  if (q.includes("scholar") || q.includes("grant") || q.includes("fund")) return CANNED.scholarship;
-  if (q.includes("road") || q.includes("plan") || q.includes("study")) return CANNED.roadmap;
-  return CANNED.default;
+async function callGemini(history: Msg[]): Promise<string> {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+  if (!apiKey) {
+    return "Missing VITE_GEMINI_API_KEY. Add it to your .env file and restart the dev server.";
+  }
+  const contents = history.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
+      }),
+    },
+  );
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Gemini error ${res.status}: ${t}`);
+  }
+  const data = await res.json();
+  const text =
+    data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
+  return text || "Sorry, I couldn't generate a response.";
 }
 
 export function Chatbot() {
@@ -34,16 +54,24 @@ export function Chatbot() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
     if (!text) return;
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    const next: Msg[] = [...messages, { role: "user", content: text }];
+    setMessages(next);
     setInput("");
     setTyping(true);
-    setTimeout(() => {
-      setMessages((m) => [...m, { role: "assistant", content: reply(text) }]);
+    try {
+      const answer = await callGemini(next);
+      setMessages((m) => [...m, { role: "assistant", content: answer }]);
+    } catch (e) {
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: `⚠️ ${e instanceof Error ? e.message : "Something went wrong."}` },
+      ]);
+    } finally {
       setTyping(false);
-    }, 900);
+    }
   };
 
   return (
