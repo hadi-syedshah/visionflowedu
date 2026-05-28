@@ -35,7 +35,7 @@ import {
 } from "recharts";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/student")({
   head: () => ({
