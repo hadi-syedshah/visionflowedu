@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -44,7 +46,8 @@ const candidateFields = [
   { field: "Health", count: 54 },
 ];
 
-const opportunities = [
+type Opportunity = { title: string; type: string; location: string; views: number; applied: number; status: "Active" | "Paused" };
+const initialOpportunities: Opportunity[] = [
   { title: "AI Research Internship", type: "Internship", location: "Remote", views: 1240, applied: 86, status: "Active" },
   { title: "Climate Tech Scholarship", type: "Scholarship", location: "Global", views: 980, applied: 142, status: "Active" },
   { title: "Junior Data Analyst", type: "Job", location: "Riyadh", views: 720, applied: 54, status: "Active" },
@@ -59,6 +62,36 @@ const candidates = [
 ];
 
 function ClientDashboard() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>(initialOpportunities);
+  const [oppTitle, setOppTitle] = useState("");
+  const [oppType, setOppType] = useState("");
+  const [oppDesc, setOppDesc] = useState("");
+
+  const publishOpportunity = () => {
+    if (!oppTitle.trim()) {
+      toast.error("Please enter a title before publishing.");
+      return;
+    }
+    const fresh: Opportunity = {
+      title: oppTitle.trim(),
+      type: oppType.trim() || "Job",
+      location: "Remote",
+      views: 0,
+      applied: 0,
+      status: "Active",
+    };
+    setOpportunities((o) => [fresh, ...o]);
+    setOppTitle("");
+    setOppType("");
+    setOppDesc("");
+    toast.success("Opportunity published", { description: fresh.title });
+  };
+
+  const removeOpportunity = (title: string) => {
+    setOpportunities((o) => o.filter((x) => x.title !== title));
+    toast("Opportunity removed", { description: title });
+  };
+
   return (
     <DashboardShell title="Organization Dashboard" subtitle="Future Foundation · Education Partner">
       {/* Org profile */}
@@ -75,7 +108,7 @@ function ClientDashboard() {
                 <p className="text-sm text-muted-foreground">Education partner · 12 active opportunities · est. 2018</p>
               </div>
             </div>
-            <Button variant="outline">Edit profile</Button>
+            <Button variant="outline" onClick={() => toast("Edit profile", { description: "Demo: profile editor would open here." })}>Edit profile</Button>
           </div>
         </CardContent>
       </Card>
@@ -142,7 +175,7 @@ function ClientDashboard() {
             <CardTitle>Opportunity Management</CardTitle>
             <CardDescription>Your postings and their performance</CardDescription>
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90"><Plus className="h-4 w-4 mr-1" /> Post opportunity</Button>
+          <Button onClick={() => document.getElementById("quick-post")?.scrollIntoView({ behavior: "smooth" })} className="bg-gradient-primary hover:opacity-90"><Plus className="h-4 w-4 mr-1" /> Post opportunity</Button>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border overflow-hidden">
@@ -172,8 +205,8 @@ function ClientDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => toast(`Editing ${o.title}`, { description: "Demo: editor would open here." })}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => removeOpportunity(o.title)}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -202,22 +235,22 @@ function ClientDashboard() {
                   </div>
                 </div>
                 <Badge className="bg-gradient-primary">{c.match}% match</Badge>
-                <Button variant="outline" size="sm">View</Button>
+                <Button variant="outline" size="sm" onClick={() => toast(`Viewing ${c.name}`, { description: `${c.role} · ${c.location}` })}>View</Button>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="quick-post">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /> Quick Post</CardTitle>
             <CardDescription>Publish an opportunity in seconds</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Input placeholder="Opportunity title" />
-            <Input placeholder="Type (Job / Internship / Scholarship)" />
-            <Textarea placeholder="Short description…" rows={4} />
-            <Button className="w-full bg-gradient-primary hover:opacity-90">Publish</Button>
+            <Input placeholder="Opportunity title" value={oppTitle} onChange={(e) => setOppTitle(e.target.value)} />
+            <Input placeholder="Type (Job / Internship / Scholarship)" value={oppType} onChange={(e) => setOppType(e.target.value)} />
+            <Textarea placeholder="Short description…" rows={4} value={oppDesc} onChange={(e) => setOppDesc(e.target.value)} />
+            <Button onClick={publishOpportunity} className="w-full bg-gradient-primary hover:opacity-90">Publish</Button>
           </CardContent>
         </Card>
       </div>
