@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -74,6 +75,10 @@ function AdminDashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
+  const [editing, setEditing] = useState<{ index: number; data: Scholarship } | null>(null);
+
+  const openCount = scholarships.filter((s) => s.status === "Open").length;
+  const totalApplicants = scholarships.reduce((sum, s) => sum + s.applicants, 0);
 
   const addScholarship = () => {
     const n = scholarships.length + 1;
@@ -91,6 +96,13 @@ function AdminDashboard() {
   const removeScholarship = (name: string) => {
     setScholarships((s) => s.filter((x) => x.name !== name));
     toast("Scholarship removed", { description: name });
+  };
+
+  const saveEdit = () => {
+    if (!editing) return;
+    setScholarships((list) => list.map((s, i) => (i === editing.index ? editing.data : s)));
+    toast.success("Scholarship updated", { description: editing.data.name });
+    setEditing(null);
   };
 
   const publishAnnouncement = () => {
@@ -114,8 +126,8 @@ function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total users" value="42,318" delta="+1,204 this week" icon={Users} />
         <StatCard label="Active students" value="18,742" delta="+8.4% MoM" icon={Activity} />
-        <StatCard label="Scholarships" value="312" delta="46 open" icon={Trophy} />
-        <StatCard label="AI requests today" value="64,210" delta="+12% vs avg" icon={Bot} />
+        <StatCard label="Scholarships" value={String(scholarships.length)} delta={`${openCount} open`} icon={Trophy} />
+        <StatCard label="Total applicants" value={totalApplicants.toLocaleString()} delta="+12% vs avg" icon={Bot} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -209,7 +221,7 @@ function AdminDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => toast(`Editing ${s.name}`, { description: "Demo: edit dialog would open here." })}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setEditing({ index: scholarships.indexOf(s), data: { ...s } })}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => removeScholarship(s.name)}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
@@ -252,6 +264,27 @@ function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit scholarship</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <Input value={editing.data.name} onChange={(e) => setEditing({ ...editing, data: { ...editing.data, name: e.target.value } })} placeholder="Name" />
+              <Input value={editing.data.org} onChange={(e) => setEditing({ ...editing, data: { ...editing.data, org: e.target.value } })} placeholder="Organization" />
+              <Input value={editing.data.amount} onChange={(e) => setEditing({ ...editing, data: { ...editing.data, amount: e.target.value } })} placeholder="Amount" />
+              <div className="flex gap-2">
+                <Button variant={editing.data.status === "Open" ? "default" : "outline"} size="sm" onClick={() => setEditing({ ...editing, data: { ...editing.data, status: "Open" } })}>Open</Button>
+                <Button variant={editing.data.status === "Closed" ? "default" : "outline"} size="sm" onClick={() => setEditing({ ...editing, data: { ...editing.data, status: "Closed" } })}>Closed</Button>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveEdit} className="bg-gradient-primary">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardShell>
   );
 }
