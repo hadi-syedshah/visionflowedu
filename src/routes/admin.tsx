@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,7 +53,8 @@ const growth = [
   { m: "Jul", users: 6800 },
 ];
 
-const scholarships = [
+type Scholarship = { name: string; org: string; amount: string; applicants: number; status: "Open" | "Closed" };
+const initialScholarships: Scholarship[] = [
   { name: "Vision 2030 STEM Grant", org: "Ministry of Education", amount: "$8,000", applicants: 421, status: "Open" },
   { name: "UNESCO SDG-4 Fellowship", org: "UNESCO", amount: "$12,000", applicants: 318, status: "Open" },
   { name: "Future Leaders Award", org: "Global Youth Forum", amount: "$5,500", applicants: 256, status: "Open" },
@@ -59,13 +62,53 @@ const scholarships = [
   { name: "Climate Action Scholarship", org: "Green Initiative", amount: "$4,500", applicants: 142, status: "Open" },
 ];
 
-const announcements = [
+type Announcement = { title: string; date: string; audience: string };
+const initialAnnouncements: Announcement[] = [
   { title: "Platform v2.4 launching", date: "2026-05-20", audience: "All users" },
   { title: "New scholarship batch open", date: "2026-05-18", audience: "Students" },
   { title: "Partner onboarding webinar", date: "2026-05-12", audience: "Organizations" },
 ];
 
 function AdminDashboard() {
+  const [scholarships, setScholarships] = useState<Scholarship[]>(initialScholarships);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
+  const [annTitle, setAnnTitle] = useState("");
+  const [annBody, setAnnBody] = useState("");
+
+  const addScholarship = () => {
+    const n = scholarships.length + 1;
+    const fresh: Scholarship = {
+      name: `New Opportunity Grant #${n}`,
+      org: "EduVision Partners",
+      amount: `$${(3 + n) * 1000}`,
+      applicants: 0,
+      status: "Open",
+    };
+    setScholarships((s) => [fresh, ...s]);
+    toast.success("Scholarship added", { description: fresh.name });
+  };
+
+  const removeScholarship = (name: string) => {
+    setScholarships((s) => s.filter((x) => x.name !== name));
+    toast("Scholarship removed", { description: name });
+  };
+
+  const publishAnnouncement = () => {
+    if (!annTitle.trim()) {
+      toast.error("Please enter a title before publishing.");
+      return;
+    }
+    const fresh: Announcement = {
+      title: annTitle.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      audience: "All users",
+    };
+    setAnnouncements((a) => [fresh, ...a]);
+    setAnnTitle("");
+    setAnnBody("");
+    toast.success("Announcement published", { description: fresh.title });
+  };
+
   return (
     <DashboardShell title="Admin Control Center" subtitle="Platform health, users and content management">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -138,7 +181,7 @@ function AdminDashboard() {
             <CardTitle>Scholarship Management</CardTitle>
             <CardDescription>Review, edit and approve scholarship listings</CardDescription>
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90"><Plus className="h-4 w-4 mr-1" /> New scholarship</Button>
+          <Button onClick={addScholarship} className="bg-gradient-primary hover:opacity-90"><Plus className="h-4 w-4 mr-1" /> New scholarship</Button>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border overflow-hidden">
@@ -166,8 +209,8 @@ function AdminDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => toast(`Editing ${s.name}`, { description: "Demo: edit dialog would open here." })}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => removeScholarship(s.name)}><Trash2 className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -184,10 +227,10 @@ function AdminDashboard() {
             <CardDescription>Broadcast updates across the platform</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Input placeholder="Title" />
-            <Textarea placeholder="Write your announcement…" rows={4} />
+            <Input placeholder="Title" value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} />
+            <Textarea placeholder="Write your announcement…" rows={4} value={annBody} onChange={(e) => setAnnBody(e.target.value)} />
             <div className="flex justify-end">
-              <Button className="bg-gradient-primary hover:opacity-90">Publish</Button>
+              <Button onClick={publishAnnouncement} className="bg-gradient-primary hover:opacity-90">Publish</Button>
             </div>
           </CardContent>
         </Card>
@@ -203,7 +246,7 @@ function AdminDashboard() {
                   <div className="font-medium truncate">{a.title}</div>
                   <div className="text-xs text-muted-foreground">{a.date} · {a.audience}</div>
                 </div>
-                <Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => toast(`Editing "${a.title}"`, { description: "Demo: edit dialog would open here." })}><Pencil className="h-4 w-4" /></Button>
               </div>
             ))}
           </CardContent>
