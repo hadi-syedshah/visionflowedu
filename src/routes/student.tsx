@@ -35,6 +35,7 @@ import {
 } from "recharts";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2, Search } from "lucide-react";
 
 export const Route = createFileRoute("/student")({
   head: () => ({
@@ -125,10 +126,13 @@ function generateRoadmap(interests: string, skills: string): { target: string; s
   return { target: found.target, steps };
 }
 
-const scholarships = [
-  { name: "Vision 2030 STEM Grant", org: "Ministry of Education", amount: "$8,000", match: 96, deadline: "Aug 15" },
-  { name: "UNESCO SDG-4 Fellowship", org: "UNESCO", amount: "$12,000", match: 91, deadline: "Sep 02" },
-  { name: "Future Leaders Award", org: "Global Youth Forum", amount: "$5,500", match: 87, deadline: "Oct 10" },
+const allScholarships = [
+  { name: "Vision 2030 STEM Grant", org: "Ministry of Education", amount: "$8,000", match: 96, deadline: "Aug 15", tags: ["ai", "stem", "tech", "data", "engineering"] },
+  { name: "UNESCO SDG-4 Fellowship", org: "UNESCO", amount: "$12,000", match: 91, deadline: "Sep 02", tags: ["education", "research", "writing", "sdg"] },
+  { name: "Future Leaders Award", org: "Global Youth Forum", amount: "$5,500", match: 87, deadline: "Oct 10", tags: ["business", "leadership", "entrepreneur"] },
+  { name: "Green Innovators Grant", org: "Climate Council", amount: "$7,200", match: 89, deadline: "Nov 04", tags: ["climate", "sustain", "environment", "green"] },
+  { name: "Creative Minds Fellowship", org: "Arts Foundation", amount: "$4,800", match: 84, deadline: "Dec 01", tags: ["design", "ux", "ui", "creative", "art"] },
+  { name: "Health Pioneers Bursary", org: "WHO Youth", amount: "$6,500", match: 86, deadline: "Jan 15", tags: ["health", "bio", "medic", "nurse"] },
 ];
 
 const careers = [
@@ -149,11 +153,29 @@ function StudentDashboard() {
   const [skills, setSkills] = useState("Python, writing, public speaking");
   const [roadmap, setRoadmap] = useState<RoadmapStep[]>(defaultRoadmap);
   const [target, setTarget] = useState("AI Engineer");
+  const [loading, setLoading] = useState(false);
 
-  const regenerate = () => {
+  const blob = `${interests} ${skills}`.toLowerCase();
+  const filteredScholarships = allScholarships
+    .map((s) => ({ ...s, hits: s.tags.filter((t) => blob.includes(t)).length }))
+    .sort((a, b) => b.hits - a.hits || b.match - a.match)
+    .slice(0, 4);
+
+  // dynamic progress derived from roadmap completion
+  const doneCount = roadmap.filter((r) => r.status === "done").length;
+  const masteryBase = Math.max(20, doneCount * 18);
+  const dynamicProgress = progressData.map((p, i) => ({
+    ...p,
+    mastery: Math.min(95, masteryBase + i * 6),
+  }));
+
+  const regenerate = async () => {
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 900));
     const { target: t, steps } = generateRoadmap(interests, skills);
     setTarget(t);
     setRoadmap(steps);
+    setLoading(false);
     toast.success("Roadmap regenerated", { description: `Tailored for ${t}` });
   };
 
@@ -185,7 +207,10 @@ function StudentDashboard() {
                 <Input className="mt-1" value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="e.g. Python, design" />
               </div>
               <div className="sm:col-span-2 flex justify-end">
-                <Button onClick={regenerate} className="bg-gradient-primary hover:opacity-90 shadow-glow"><Sparkles className="h-4 w-4 mr-1" /> Regenerate roadmap</Button>
+                <Button onClick={regenerate} disabled={loading} className="bg-gradient-primary hover:opacity-90 shadow-glow">
+                  {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                  {loading ? "Generating…" : "Regenerate roadmap"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -196,9 +221,16 @@ function StudentDashboard() {
               <CardDescription>12-week path tailored to: {target}</CardDescription>
             </CardHeader>
             <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 rounded-lg border bg-muted/40 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
               <div className="space-y-3">
                 {roadmap.map((step, i) => (
-                  <div key={i} className="flex items-center gap-4 rounded-lg border p-4 hover:bg-muted/40 transition">
+                  <div key={`${target}-${i}`} className="flex items-center gap-4 rounded-lg border p-4 hover:bg-muted/40 transition animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
                     <div className="shrink-0">
                       {step.status === "done" && <CheckCircle2 className="h-6 w-6 text-emerald-500" />}
                       {step.status === "active" && <PlayCircle className="h-6 w-6 text-primary animate-pulse" />}
@@ -214,6 +246,7 @@ function StudentDashboard() {
                   </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
 
@@ -224,7 +257,7 @@ function StudentDashboard() {
             </CardHeader>
             <CardContent className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={progressData}>
+                <AreaChart data={dynamicProgress}>
                   <defs>
                     <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="oklch(0.68 0.22 280)" stopOpacity={0.6} />
@@ -295,11 +328,11 @@ function StudentDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5 text-primary" /> Scholarship matches</CardTitle>
-            <CardDescription>Personalized opportunities you may qualify for</CardDescription>
+            <CardDescription>Filtered by your interests · {filteredScholarships.length} matches</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {scholarships.map((s) => (
-              <div key={s.name} className="rounded-lg border p-4 hover:shadow-elegant transition">
+            {filteredScholarships.map((s, i) => (
+              <div key={s.name} className="rounded-lg border p-4 hover:shadow-elegant transition animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-semibold truncate">{s.name}</div>
